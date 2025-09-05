@@ -1,3 +1,6 @@
+// Multer here, which is a middleware for handling file uploads in Express.
+
+
 import multer from "multer";
 
 const storage = multer.diskStorage({

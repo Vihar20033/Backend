@@ -59,16 +59,20 @@ const userSchema = new Schema(
     }
 )
 
+
+// Mongoose Middleware hook - automatically runs before the user gets saved
 userSchema.pre("save", async function(next){
     if(!this.isModified("password")) return next()
     this.password = await bcrypt.hash(this.password , 10)
     next()
 })
 
+// Mongoose instance method - compare password
 userSchema.methods.comparePassword = async function(password){
     return await bcrypt.compare(password , this.password)
 }
 
+// Mongoose instance method - generate JWT
 userSchema.methods.generateAccessToken = function(){
     return jwt.sign(
     {
@@ -83,6 +87,7 @@ userSchema.methods.generateAccessToken = function(){
     })
 }
 
+// Mongoose instance method - generate Refresh Token
 userSchema.methods.generateRefreshToken = function(){
     return jwt.sign(
     {
