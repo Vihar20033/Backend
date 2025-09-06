@@ -18,7 +18,6 @@ const registerUser = asynchandler(async (req, res) => {
 
     // Data comes from form and json get with req.body
     const {fullname , email , username , password}= req.body
-    console.log("email: " , email)
 
     //Validation
     if([fullname , email , username , password].some(field => field?.trim() === "")){
@@ -26,7 +25,7 @@ const registerUser = asynchandler(async (req, res) => {
     }
 
     // Checking existing user
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [ {username } , { email }]
     })
 
@@ -36,9 +35,13 @@ const registerUser = asynchandler(async (req, res) => {
 
     // Image and avatar - Stored in server not in cloudinary
     const avatarLocalPath = req.files?.avatar[0]?.path
-    const coverImageLocalPath = req.files?.coverImage[0]?.path
-    console.log("AvatarPath: ", avatarLocalPath)
-    console.log("CoverImagePath: ", coverImageLocalPath)
+
+    //const coverImageLocalPath = req.files?.coverImage[0]?.path => Give problem on undefined URL response
+    // req.files are in array format with object inside it 
+    let coverImageLocalPath;
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path;
+    }
 
     if(!avatarLocalPath){
         throw new ApiError(400, "Avatar file is required");
@@ -77,9 +80,6 @@ const registerUser = asynchandler(async (req, res) => {
     return res.status(201).json(
         new ApiResponse(200, createdUser , "User Registered Successfully ")
     )
-
-
-
 
 
 })
