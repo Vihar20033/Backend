@@ -386,7 +386,6 @@ const updateUserCoverImage = asynchandler(async (req, res) => {
         .json(new ApiResponse(200, updatedUser, "Cover image updated successfully"));
 });
 
-
 // MongoDB Aggregation to get user channel profile details
 const getUserChannelProfile = asynchandler(async (req, res) => {
 
@@ -461,6 +460,8 @@ const getUserChannelProfile = asynchandler(async (req, res) => {
         new ApiResponse(200, channel[0] , "User channel profile fetched successfully")
     )
 })
+
+
 
 export {
     registerUser,
