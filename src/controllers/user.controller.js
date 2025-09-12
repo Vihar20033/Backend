@@ -7,10 +7,7 @@ import { User } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 
-/**
- * generateAccessAndRefreshToken
- * - Assumes User model instance has generateAccessToken() and generateRefreshToken()
- */
+
 const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -29,7 +26,6 @@ const generateAccessAndRefreshToken = async (userId) => {
   }
 };
 
-/* ========================= REGISTER ========================= */
 const registerUser = asynchandler(async (req, res) => {
   const { fullname, email, username, password } = req.body;
 
@@ -86,7 +82,6 @@ const registerUser = asynchandler(async (req, res) => {
   return res.status(201).json(new ApiResponse(201, createdUser, "User Registered Successfully"));
 });
 
-/* ========================= LOGIN ========================= */
 const loginUser = asynchandler(async (req, res) => {
   const { email, username, password } = req.body;
   if (!username && !email) {
@@ -130,13 +125,13 @@ const loginUser = asynchandler(async (req, res) => {
     );
 });
 
-/* ========================= LOGOUT ========================= */
 const loggedOutUser = asynchandler(async (req, res) => {
   // Remove refresh token from DB (if user exists)
+
   if (req.user?._id) {
     await User.findByIdAndUpdate(
       req.user._id,
-      { $set: { refreshToken: undefined } },
+      { $unset: { refreshToken: 1 } },
       { new: true }
     );
   }
@@ -156,8 +151,8 @@ const loggedOutUser = asynchandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User Logged Out Successfully"));
 });
 
-/* ========================= REFRESH ACCESS TOKEN ========================= */
-const refreshAccessToken = asynchandler(async (req, res) => {
+
+const  refreshAccessToken = asynchandler(async (req, res) => {
   const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
   if (!incomingRefreshToken) {
@@ -190,7 +185,6 @@ const refreshAccessToken = asynchandler(async (req, res) => {
   }
 });
 
-/* ========================= CHANGE CURRENT PASSWORD ========================= */
 const changeCurrentPassword = asynchandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
@@ -212,29 +206,35 @@ const changeCurrentPassword = asynchandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, {}, "Password changed successfully"));
 });
 
-/* ========================= GET CURRENT USER ========================= */
 const getCurrentUser = asynchandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, req.user, "Current user fetched successfully"));
 });
 
-/* ========================= UPDATE ACCOUNT DETAILS ========================= */
 const UpdateAccountDetails = asynchandler(async (req, res) => {
   const { fullname, email } = req.body;
 
-  if (!fullname || !email) {
-    throw new ApiError(400, "All fields are required");
+  // Check that at least one field is provided
+  if (!fullname && !email) {
+    throw new ApiError(400, "At least one field is required");
   }
+
+  // Build update object dynamically
+  const updateData = {};
+  if (fullname) updateData.fullname = fullname;
+  if (email) updateData.email = email;
 
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
-    { $set: { fullname, email } },
+    { $set: updateData },
     { new: true }
   ).select("-password");
 
-  return res.status(200).json(new ApiResponse(200, updatedUser, "Account details updated successfully"));
+  return res.status(200).json(
+    new ApiResponse(200, updatedUser, "Account details updated successfully")
+  );
 });
 
-/* ========================= UPDATE AVATAR ========================= */
+
 const updateUserAvatar = asynchandler(async (req, res) => {
   const avatarLocalPath = req.file?.path;
   if (!avatarLocalPath) throw new ApiError(400, "Avatar file is missing");
@@ -267,7 +267,6 @@ const updateUserAvatar = asynchandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, updatedUser, "Avatar updated successfully"));
 });
 
-/* ========================= UPDATE COVER IMAGE ========================= */
 const updateUserCoverImage = asynchandler(async (req, res) => {
   const coverImageLocalPath = req.file?.path;
   if (!coverImageLocalPath) throw new ApiError(400, "Cover image file is missing");
@@ -298,7 +297,6 @@ const updateUserCoverImage = asynchandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, updatedUser, "Cover image updated successfully"));
 });
 
-/* ========================= GET USER CHANNEL PROFILE (aggregation) ========================= */
 const getUserChannelProfile = asynchandler(async (req, res) => {
   const { username } = req.params;
   if (!username?.trim()) throw new ApiError(400, "Username is not found");
@@ -377,9 +375,9 @@ const getUserChannelProfile = asynchandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, result, "User channel profile fetched successfully"));
 });
 
-/* ========================= GET WATCH HISTORY (aggregation) ========================= */
 const getWatchHistory = asynchandler(async (req, res) => {
   const userId = req.user?._id;
+
   if (!userId) throw new ApiError(401, "Unauthorized");
 
   const userAgg = await User.aggregate([
@@ -427,11 +425,12 @@ const getWatchHistory = asynchandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, history, "User watch history fetched successfully"));
 });
 
-/* ========================= REMOVE VIDEO FROM WATCH HISTORY ========================= */
 const removeVideoFromWatchHistory = asynchandler(async (req, res) => {
   const { videoId } = req.params;
   const user = await User.findById(req.user?._id);
-  if (!user) throw new ApiError(404, "User not found");
+
+  if (!user) 
+    throw new ApiError(404, "User not found");
 
   user.watchHistory.pull(videoId);
   await user.save();
@@ -441,7 +440,6 @@ const removeVideoFromWatchHistory = asynchandler(async (req, res) => {
     .json(new ApiResponse(200, user.watchHistory, "Video removed from watch history successfully"));
 });
 
-/* ========================= ADD VIDEO TO WATCH HISTORY ========================= */
 const addVideoToWatchHistory = asynchandler(async (req, res) => {
   const { videoId } = req.params;
   if (!mongoose.Types.ObjectId.isValid(videoId)) throw new ApiError(400, "Invalid video id");
@@ -472,4 +470,5 @@ export {
   getWatchHistory,
   removeVideoFromWatchHistory,
   addVideoToWatchHistory,
+
 };
