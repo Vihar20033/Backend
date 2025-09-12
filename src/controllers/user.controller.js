@@ -516,6 +516,43 @@ const getWatchHistory = asynchandler(async (req , res) => {
     )
 })
 
+const removeVideoFromWatchHistory = asynchandler(async (req , res) => {
+    const { videoId } = req.params
+
+    const user = await User.findById(req.user?._id)
+
+    if(!user){
+        throw new ApiError(404 , "User not found")
+    }
+
+    user.watchHistory.pull(videoId)
+    await user.save()
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, user.watchHistory , "Video removed from watch history successfully")
+    )
+})
+
+const addVideoToWatchHistory = asynchandler(async (req , res) => {
+    const { videoId } = req.params
+
+    const user = await User.findById(req.user?._id)
+
+    if(!user){
+        throw new ApiError(404 , "User not found")
+    }
+
+    user.watchHistory.push(videoId)
+    await user.save()
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, user.watchHistory , "Video added to watch history successfully")
+    )
+})
 
 export {
     registerUser,
@@ -528,5 +565,8 @@ export {
     updateUserAvatar,
     updateUserCoverImage,
     getUserChannelProfile,
-    getWatchHistory
+    getWatchHistory,
+    removeVideoFromWatchHistory,
+    addVideoToWatchHistory
+
 }
